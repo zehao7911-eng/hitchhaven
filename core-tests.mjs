@@ -12,6 +12,11 @@ controller.begin(0);tick(100);controller.input(.6,.5);tick(60);controller.releas
 const restored=controller.snapshot();ok(restored.level===0&&Math.abs(restored.clock-old.clock)<1e-8,'restore round and elapsed drive time');ok(restored.bodies.every((b,i)=>Math.hypot(b[0]-old.bodies[i][0],b[1]-old.bodies[i][1])<1e-8),'restore chassis, wheels, trailer and scenery poses');
 tick(30);ok(controller.snapshot().bodies.every(b=>b.every(Number.isFinite)),'restored constraints settle without NaN');let driveBefore=events.filter(e=>e.type==='drive').length;controller.input(.2,0);tick(10);ok(events.filter(e=>e.type==='drive').length===driveBefore+1,'next real action after restoration starts the resumed visit');controller.release();
 ok(!controller.restore({...old,level:99}),'out-of-range checkpoint rejected');ok(!controller.restore({...old,bodies:[[NaN,1,1,1,1,1]]}),'nonfinite checkpoint rejected');
+controller.begin(0);tick(100);controller.input(1,0);tick(300);controller.release();tick(60);ok(events.some(e=>e.type==='bump'),'actual solver contact emits bump feedback');
+controller.begin(0);tick(100);controller.input(-.65,.7);tick(120);controller.release();tick(40);const bent=controller.snapshot(),rig=Game._debug().veh;
+const point=(body,x)=>({x:body.position.x+Math.cos(body.rotation)*x,y:body.position.y+Math.sin(body.rotation)*x});
+const carHitch=point(rig.chassis,rig.hitchX),coupler=point(rig.trailer.body,rig.trailer.couplerX);
+ok(Math.hypot(carHitch.x-coupler.x,carHitch.y-coupler.y)<1.5,'steered reversing keeps the actual tow-ball and coupler attached');ok(Math.abs(controller.state().angle)>.05,'trailer articulates independently under sideways input');
 // Goal fixtures exercise the actual coupled solver and collision geometry at all six destinations.
 // These are simulation fixtures, not a claim to have manually driven each route.
 for(let level=0;level<sites.length;level++){
