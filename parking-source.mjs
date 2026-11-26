@@ -3317,11 +3317,15 @@ function placeCamera(camera) {
     ex = VIEW_W / 2; ey = -VIEW_H / 2 - 420 * _camDist; ez = 560 * _camDist;
   } else {
     const k = Math.min(.5,45/Math.max(1,Math.hypot(c.x-bay.x,c.y-bay.y)));
-    const fx = c.x + (bay.x - c.x) * k, fy = c.y + (bay.y - c.y) * k;
+    const tb=v.trailer.body,ts=v.trailer.spec;
+    const thx=(Math.abs(Math.cos(tb.rotation))*ts.len+Math.abs(Math.sin(tb.rotation))*ts.wid)*M/2+6;
+    const bhx=(Math.abs(Math.cos(bay.a))*bay.l+Math.abs(Math.sin(bay.a))*bay.w)/2;
+    const minX=Math.min(c.x-29,tb.position.x-thx,bay.x-bhx),maxX=Math.max(c.x+29,tb.position.x+thx,bay.x+bhx);
+    const fx=(minX+maxX)/2, fy=c.y+(bay.y-c.y)*k;
     const aspect=camera.aspect||1;
     const distance=Math.hypot(c.x-bay.x,c.y-bay.y);
-    const horizontal=(Math.abs(c.x-bay.x)+80)/(2*Math.tan((camera.fov||42)*Math.PI/360)*Math.max(.28,aspect))*1.04;
-    const fit=Math.max(clamp(285+distance*.75,320,700),aspect<.8?Math.min(700,horizontal):0);
+    const horizontal=(maxX-minX+40)/(2*Math.tan((camera.fov||42)*Math.PI/360)*Math.max(.28,aspect));
+    const fit=Math.max(clamp(285+distance*.75,320,700),aspect<.8?Math.min(1100,horizontal):0);
     const D = fit * _camDist * (aspect<.7?1.13:1), pitch = 1.03;
     tx = fx; ty = -fy; tz = 0;
     ex = tx; ey = ty - Math.cos(pitch) * D; ez = Math.sin(pitch) * D;
@@ -3593,7 +3597,7 @@ export const controller={
  camera(){_camMode=(_camMode+1)%3;_camPos=null;},
  color(hex){PLAYER_COLOR=hex;_levelGen++;},
  setBest(best){_best=best.map(v=>typeof v==='number'?{stars:v,score:0}:v);},
- state(){return {level:_levelIdx,phase:_phase,clock:_clock,hold:_hold,holdGoal:PARK_HOLD,park:_parkState,result:_result,bumps:_hits+_crashes,cones:_coneHits,speed:Math.abs(_veh?.speed||0)/M,gear:_veh?.gear||1,steer:_veh?.steer||0,angle:_veh?wrapPi(_veh.chassis.rotation-_veh.trailer.body.rotation):0};},
+ state(){let bearing=0;if(_veh){const c=_veh.chassis.position,b=_level.bay,p=_project?.(b.x,b.y,0),q=_project?.(c.x,c.y,0);bearing=p&&q?Math.atan2(p.y-q.y,p.x-q.x):Math.atan2(b.y-c.y,b.x-c.x);}return {bearing,level:_levelIdx,phase:_phase,clock:_clock,hold:_hold,holdGoal:PARK_HOLD,park:_parkState,result:_result,bumps:_hits+_crashes,cones:_coneHits,speed:Math.abs(_veh?.speed||0)/M,gear:_veh?.gear||1,steer:_veh?.steer||0,angle:_veh?wrapPi(_veh.chassis.rotation-_veh.trailer.body.rotation):0};},
  snapshot(){if(_phase!=='play')return null;return{v:1,level:_levelIdx,clock:_clock,hits:_hits,crashes:_crashes,coneHits:_coneHits,bodies:movingBodies().map(b=>[b.position.x,b.position.y,b.rotation,b.velocity.x,b.velocity.y,b.angularVel]),cones:_cones.map(c=>({down:!!c.down,tip:c.tip||0,hit:!!c.hit})),gear:_veh.gear,steer:_veh.steer};},
  restore(save){
    if(!save||save.v!==1||!Number.isInteger(save.level)||save.level<0||save.level>=LEVELS.length||!Number.isFinite(save.clock)||save.clock<0||save.clock>86400||!Array.isArray(save.bodies)||!save.bodies.every(p=>Array.isArray(p)&&p.length===6&&p.every(Number.isFinite)&&Math.abs(p[0])<2000&&Math.abs(p[1])<1500&&p.slice(2).every(v=>Math.abs(v)<10000)))return false;

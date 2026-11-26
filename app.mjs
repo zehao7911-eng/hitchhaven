@@ -52,6 +52,7 @@ function renderMenu(){
 function updateHUD(s){
  document.body.dataset.phase=paused?'paused':!running?'ready':s.phase;document.body.dataset.level=String(s.level);
  $('time').textContent=clock(s.clock);$('bumps').textContent='◇ '+s.bumps;$('stars').textContent='★ '+p.best.reduce((a,b)=>a+b,0)+' / 18';
+ if(s.phase!=='done'){$('check').textContent='➜';$('check').style.transform=`rotate(${s.bearing}rad)`;}else{$('check').textContent='✓';$('check').style.transform='none';}
  $('inbay').classList.toggle('yes',!!s.park?.inside);$('square').classList.toggle('yes',!!s.park?.aligned);$('still').classList.toggle('yes',!!s.park?.stopped);
  $('progress').firstElementChild.style.width=Math.min(100,s.hold/s.holdGoal*100)+'%';
  $('gear').firstChild.textContent=s.gear<0?'R ':'D ';$('gear').lastElementChild.textContent=s.gear<0?'REVERSE':'DRIVE';
